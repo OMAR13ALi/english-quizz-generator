@@ -60,41 +60,55 @@ export default function QuizApp() {
         const questionsToLoad = [];
         
         console.log('Starting to load questions...');
-        // Load questions sequentially to avoid overwhelming the API
-        for (let i = 0; i < 10; i++) {
-          try {
-            console.log(`Fetching question ${i + 1}...`);
-            const question = await fetchQuestion();
-            console.log(`Question ${i + 1} loaded successfully.`);
-            questionsToLoad.push(question);
-          } catch (error) {
-            // Log detailed error information
-            console.error(`Failed to load question ${i + 1}:`, {
-              message: error instanceof Error ? error.message : String(error),
-              stack: error instanceof Error ? error.stack : undefined
-            });
-            
-            // For network errors, add more specific information
-            if (error instanceof TypeError && error.message === 'Failed to fetch') {
-              console.error('Network error detected. Check if the server is running and accessible.');
-              throw new Error('Network error: Could not connect to the API. Please check your connection and try again.');
-            }
-            
-            throw error; // Re-throw to be caught by outer try-catch
+        // Load just one question initially to avoid timeout
+        try {
+          console.log('Fetching initial question...');
+          const question = await fetchQuestion();
+          console.log('Initial question loaded successfully.');
+          questionsToLoad.push(question);
+          setQuestions(questionsToLoad);
+          setLoading(false);
+          
+          // Then load more questions in the background
+          loadMoreQuestionsInBackground(1);
+        } catch (error) {
+          // Log detailed error information
+          console.error('Failed to load initial question:', {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
+          
+          // For network errors, add more specific information
+          if (error instanceof TypeError && error.message === 'Failed to fetch') {
+            console.error('Network error detected. Check if the server is running and accessible.');
+            throw new Error('Network error: Could not connect to the API. Please check your connection and try again.');
           }
+          
+          throw error; // Re-throw to be caught by outer try-catch
         }
-
-        if (questionsToLoad.length === 0) {
-          throw new Error('No questions could be loaded');
-        }
-
-        console.log(`Loaded ${questionsToLoad.length} questions successfully.`);
-        setQuestions(questionsToLoad);
-        setLoading(false);
       } catch (error) {
         console.error('Failed to load questions:', error);
         setError(error instanceof Error ? error.message : 'Failed to load questions');
         setLoading(false);
+      }
+    };
+
+    // Function to load more questions in background
+    const loadMoreQuestionsInBackground = async (startIndex: number) => {
+      try {
+        for (let i = startIndex; i < 5; i++) { // Load total of 5 questions
+          try {
+            console.log(`Fetching background question ${i + 1}...`);
+            const question = await fetchQuestion();
+            console.log(`Background question ${i + 1} loaded successfully.`);
+            setQuestions(prev => [...prev, question]);
+          } catch (error) {
+            console.error(`Failed to load background question ${i + 1}:`, error);
+            // Don't throw here, just log error and continue
+          }
+        }
+      } catch (e) {
+        console.error('Error in background loading:', e);
       }
     };
 
@@ -219,15 +233,15 @@ export default function QuizApp() {
 
             <CardContent className="pt-4">
               {questions[currentQuestion] && questions[currentQuestion].options && (
-                <QuizQuestion
-                  question={questions[currentQuestion].question}
-                  options={questions[currentQuestion].options}
-                  selectedAnswer={selectedAnswer}
-                  handleAnswerClick={handleAnswerClick}
-                  showFeedback={showFeedback}
-                  isCorrect={isCorrect}
-                  correctAnswer={questions[currentQuestion].correctAnswer}
-                />
+              <QuizQuestion
+                question={questions[currentQuestion].question}
+                options={questions[currentQuestion].options}
+                selectedAnswer={selectedAnswer}
+                handleAnswerClick={handleAnswerClick}
+                showFeedback={showFeedback}
+                isCorrect={isCorrect}
+                correctAnswer={questions[currentQuestion].correctAnswer}
+              />
               )}
             </CardContent>
           </>

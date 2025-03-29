@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { generateQuizQuestion } from '@/app/utils/quiz-generator';
 
+// Add Vercel runtime config to increase timeout
+export const runtime = 'edge'; // Use edge runtime for better performance
+export const maxDuration = 60; // Max 60 seconds runtime
+
 export async function GET() {
   console.log('Quiz API route called');
   
@@ -41,14 +45,10 @@ export async function GET() {
   } catch (error) {
     console.error('Error in quiz API:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate question';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    
-    console.error('Error details:', { message: errorMessage, stack: errorStack });
     
     return NextResponse.json(
       { 
-        error: errorMessage,
-        details: errorStack
+        error: errorMessage
       },
       { status: 500 }
     );

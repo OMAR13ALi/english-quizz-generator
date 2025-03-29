@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "github": {
+    "silent": true
+  },
+  "functions": {
+    "app/api/**/*": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  },
+  "env": {
+    "GITHUB_TOKEN": "@github_token"
+  },
+  "buildCommand": "npm run build"
+} 

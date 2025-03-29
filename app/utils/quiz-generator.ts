@@ -137,6 +137,11 @@ function parseResponse(content: string): QuizQuestion | null {
 export async function generateQuizQuestion(): Promise<QuizQuestion> {
   try {
     console.log("Creating Phi-4 client...");
+    
+    // Add timeout for the fetch operation
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    
     const client = ModelClient(
       "https://models.inference.ai.azure.com",
       new AzureKeyCredential(GITHUB_TOKEN as string)
@@ -148,93 +153,35 @@ export async function generateQuizQuestion(): Promise<QuizQuestion> {
     console.log("Selected prompt:", promptData.prompt);
     
     console.log("Making API request to Phi-4...");
-//     const response = await client.path("/chat/completions").post({
-//       body: {
-//         messages: [
-//           {
-//             role: "system",
-//             content: `You are an English teacher creating quiz questions. Format your response EXACTLY like this template:
+    const response = await client.path("/chat/completions").post({
+      body: {
+        messages: [
+          {
+            role: "system",
+            content: `You are an English teacher creating simple quiz questions. Format your response EXACTLY like this:
 
-// QUESTION: (write your question here)
-// A: (first option)
-// B: (second option)
-// C: (third option)
-// D: (fourth option)
-// CORRECT: (A, B, C, or D)
-
-// Do not add any other text before or after the template. Make sure one option is clearly correct. Use simple, clear language.`
-//           },
-//           {
-//             role: "user",
-//             content: promptData.prompt
-//           }
-//         ],
-//         model: "Phi-4",
-//         temperature: 0.7,
-//         max_tokens: 500,
-//         top_p: 0.95
-//       }
-//     });
-// const response = await client.path("/chat/completions").post({
-//   body: {
-//     messages: [
-//       {
-//         role: "system",
-//         content: `You are an engaging and creative English teacher known for generating fun, varied, and original quiz questions. Your questions should entertain as well as educate, incorporating unique themes, humorous twists, or interesting trivia while ensuring the language remains simple and clear. Each question should be crafted in a way that avoids repetition and feels fresh every time.
-
-// Format your response EXACTLY like this template:
-
-// QUESTION: (write your question here)
-// A: (first option)
-// B: (second option)
-// C: (third option)
-// D: (fourth option)
-// CORRECT: (A, B, C, or D)
-
-// Do not add any other text before or after the template. Ensure that one option is clearly the correct answer.`
-//       },
-//       {
-//         role: "user",
-//         content: promptData.prompt
-//       }
-//     ],
-//     model: "Phi-4",
-//     temperature: 0.7,
-//     max_tokens: 500,
-//     top_p: 0.95
-//   }
-// });
-
-const response = await client.path("/chat/completions").post({
-  body: {
-    messages: [
-      {
-        role: "system",
-        content: `You are an engaging and creative English teacher known for generating fun, varied, and original quiz questions that cover multiple themes. Your questions should entertain as well as educate, incorporating unique themes such as grammar, general knowledge, history, science, and pop culture. Create a mix of easy, intermediate, and hard questions, ensuring they are distinct and never repeated.
-
-Format your response EXACTLY like this template:
-
-QUESTION: (write your question here)
+QUESTION: (write a short question)
 A: (first option)
 B: (second option)
 C: (third option)
 D: (fourth option)
-CORRECT: (A, B, C, or D)
-
-Do not add any other text before or after the template. Ensure that one option is clearly the correct answer.`
-      },
-      {
-        role: "user",
-        content: promptData.prompt
+CORRECT: (A, B, C, or D)`
+          },
+          {
+            role: "user",
+            content: promptData.prompt
+          }
+        ],
+        model: "Phi-4",
+        temperature: 0.7,
+        max_tokens: 300, // Reduced tokens for faster response
+        top_p: 0.95,
+        presence_penalty: 0.5 // Add presence penalty to avoid lengthy answers
       }
-    ],
-    model: "Phi-4",
-    temperature: 0.7,
-    max_tokens: 500,
-    top_p: 0.95
-  }
-});
-
+    });
+    
+    // Clear the timeout as request completed
+    clearTimeout(timeoutId);
     
     if (isUnexpected(response)) {
       console.error("Unexpected response from API:", response.body.error);
